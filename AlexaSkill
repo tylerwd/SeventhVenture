@@ -156,10 +156,11 @@ const getUpcomingEventsIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getUpcomingEventsIntent';
     },
     handle(handlerInput) {
-        let EventString = '';
         
+        let EventString = '';
         // Setting up Handler as an observer to AWS trigger/events? I think.
-        exports.handler = function (event,context, callback)  {
+        
+      // exports.handler = function (event,context, callback) {
             //const ddb = new AWS.DynamoDB({apiVersion: "2012-10-08"}); // NOT USED
             const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
             const params = {
@@ -167,52 +168,42 @@ const getUpcomingEventsIntentHandler = {
             };
             //console.log('Made it in the handler');
                
-            var scanPromise = documentClient.scan(params).promise();
-        
+            let scanPromise = documentClient.scan(params).promise();
             scanPromise.then(
                 function(data) {
                     /* process the data */
                     //console.log('Made it into the promise data block');
                     for (var i = 0; i < data.Count; i++)
                     {
-                        EventString += 'We will be at ' + data.Items[i].EventName + ' which will be held at ' + data.Items[i].Location + ' at ' + data.Items[i].Time + ' ';
+                        EventString += "We will be at " + data.Items[i].EventName + " which will be held at " + data.Items[i].Location + " at " + data.Items[i].Time + " ";
                     }
                     //console.log('Event string in the promise data block: ' + EventString);
-                   
-                    // DO THE RETURN TO THE ALEXA FUNCTION IN HERE!!!!!!!! ===> This is what I returned to make it so the response isn't null
-                    callback(null, {
-                        statusCode: '200',
-                        body: EventString,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        
-                    });
-                    //console.log(EventString);
-                    return EventString;
+                    console.log('Succesfull: ' + EventString);
+                    return handlerInput.responseBuilder
+                    .speak('return inside scan data')
+                    .reprompt('Do you have any more questions for Seventh Venture?')
+                    .getResponse();
                 },
-                function(error) {
+
+            ).catch(function() {
                     /* handle the error */
                     //console.log('An error occurred in the promise');
                     // DO THE RETURN TO THE ALEXA (IN THE CASE OF AN ERROR) IN HERE!!!!!
-                   
-                    callback(null, {
-                        statusCode: '400',
-                        body: error,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                    //console.log(EventString);
-                    return EventString;
-                }
-            );
-        }
-
-
-
+                    console.log('Error: ' + EventString);
+                    return handlerInput.responseBuilder
+                    .speak(EventString)
+                    .reprompt('Do you have any more questions for Seventh Venture?')
+                    .getResponse();
+                });
+       
+            /*let speakOutput = EventString;
+            return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();*/
     }
-};
+
+    };
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
