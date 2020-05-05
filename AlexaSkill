@@ -1,0 +1,312 @@
+'use strict';
+// Load the AWS SDK for Node.js
+const AWS = require('aws-sdk');
+//Update the region for AWS;
+AWS.config.update({region: "us-east-1"});
+//Load Alexa SDK for Node.js
+const Alexa = require('ask-sdk-core');
+
+
+
+// Call DynamoDB to read the item from the table
+
+//Creation of Menu Items: Each will have an ingredients list and a quick description of how the drink is made
+var menuItem = {name:'', description:'', ingredients: ''};
+var coffee = {name:'coffee', description:'its just beans in water', ingredients: 'caffiene'};
+var lightRoastCoffee = {name:'', description:'', ingredients: ''};
+//tableHolder = 'testing';
+//EventReturn;
+//Menu items relate the input from customer (in quotes) to an object in the list
+var MENU = {
+    'coffee' : coffee
+}
+
+var menuList = ["coffee", "light roast coffee", "dark roast coffee", "cappuccino"]
+
+const LaunchRequestHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Thanks for visiting Seventh Venture Coffee! You can ask us about our menu items, where we are right now, and any upcoming events!';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+//returns the menu as a list of items to the customer
+const getMenuIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getMenuIntent';
+    },
+    handle(handlerInput) {
+        //var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        var i;
+        var speakOutput;
+        //cycles through the menu list to create a string for speach output. Adds a space between item menus
+        for (i = 0; i < menuList.length; i++){
+            if (i === 0) {
+                speakOutput = menuList[i];
+                speakOutput += ', ';
+            } else{
+                    speakOutput += menuList[i];
+                    speakOutput += ', ';                
+            }
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+const menuCheckerIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getDrinkDescriptionIntent';
+    },
+    handle(handlerInput) {
+        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        var speakOutput;        
+        if (menuList.includes(menuItem)) {
+            speakOutput = 'Yes, ' + menuItem + ' is on the menu';    
+        } else{ 
+            speakOutput = 'I am sorry, ' + menuItem + ' is not on the menu';
+        }
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+const getDrinkDescriptionIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getDrinkDescriptionIntent';
+    },
+    handle(handlerInput) {
+        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        const speakOutput = MENU[menuItem].description;
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+const addEventIntentHandler= {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'addEventIntentHandler';
+    },
+    handle(handlerInput) {
+        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        const speakOutput = MENU[menuItem].description;
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+
+const getIngredientsInfoIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getIngredientsInfoIntent';
+    },
+    handle(handlerInput) {
+        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        var ingredient = handlerInput.requestEnvelope.request.intent.slots.ingredient.value;
+        var speakOutput;
+        if (MENU[menuItem].ingredients.includes(ingredient)){
+            speakOutput = 'Yes, ' + menuItem + ' contains ' + ingredient;
+        } else {
+            speakOutput = 'No, ' + menuItem + ' does not contain ' + ingredient;
+        }
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+const getLocationIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getLocationIntent';
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Location';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt('Do you have any more questions for Seventh Venture?')
+            .getResponse();
+    }
+};
+
+const getUpcomingEventsIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getUpcomingEventsIntent';
+    },
+    handle(handlerInput) {
+        let EventString = '';
+        
+        // Setting up Handler as an observer to AWS trigger/events? I think.
+        exports.handler = function (event,context, callback)  {
+            //const ddb = new AWS.DynamoDB({apiVersion: "2012-10-08"}); // NOT USED
+            const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                TableName: "SVEvents"
+            };
+            //console.log('Made it in the handler');
+               
+            var scanPromise = documentClient.scan(params).promise();
+        
+            scanPromise.then(
+                function(data) {
+                    /* process the data */
+                    //console.log('Made it into the promise data block');
+                    for (var i = 0; i < data.Count; i++)
+                    {
+                        EventString += 'We will be at ' + data.Items[i].EventName + ' which will be held at ' + data.Items[i].Location + ' at ' + data.Items[i].Time + ' ';
+                    }
+                    //console.log('Event string in the promise data block: ' + EventString);
+                   
+                    // DO THE RETURN TO THE ALEXA FUNCTION IN HERE!!!!!!!! ===> This is what I returned to make it so the response isn't null
+                    callback(null, {
+                        statusCode: '200',
+                        body: EventString,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        
+                    });
+                    //console.log(EventString);
+                    return EventString;
+                },
+                function(error) {
+                    /* handle the error */
+                    //console.log('An error occurred in the promise');
+                    // DO THE RETURN TO THE ALEXA (IN THE CASE OF AN ERROR) IN HERE!!!!!
+                   
+                    callback(null, {
+                        statusCode: '400',
+                        body: error,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    //console.log(EventString);
+                    return EventString;
+                }
+            );
+        }
+
+
+
+    }
+};
+
+const HelpIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
+    },
+    handle(handlerInput) {
+        const speakOutput = 'You can say hello to me! How can I help?';
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+const CancelAndStopIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && (Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent'
+                || Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.StopIntent');
+    },
+    handle(handlerInput) {
+        const speakOutput = 'Goodbye!';
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
+const SessionEndedRequestHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'SessionEndedRequest';
+    },
+    handle(handlerInput) {
+        // Any cleanup logic goes here.
+        return handlerInput.responseBuilder.getResponse();
+    }
+};
+
+// The intent reflector is used for interaction model testing and debugging.
+// It will simply repeat the intent the user said. You can create custom handlers
+// for your intents by defining them above, then also adding them to the request
+// handler chain below.
+const IntentReflectorHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest';
+    },
+    handle(handlerInput) {
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const speakOutput = `You just triggered ${intentName}`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .getResponse();
+    }
+};
+
+// Generic error handling to capture any syntax or routing errors. If you receive an error
+// stating the request handler chain is not found, you have not implemented a handler for
+// the intent being invoked or included it in the skill builder below.
+const ErrorHandler = {
+    canHandle() {
+        return true;
+    },
+    handle(handlerInput, error) {
+        console.log(`~~~~ Error handled: ${error.stack}`);
+        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.`;
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(speakOutput)
+            .getResponse();
+    }
+};
+
+// The SkillBuilder acts as the entry point for your skill, routing all request and response
+// payloads to the handlers above. Make sure any new handlers or interceptors you've
+// defined are included below. The order matters - they're processed top to bottom.
+exports.handler = Alexa.SkillBuilders.custom()
+    .addRequestHandlers(
+        LaunchRequestHandler,
+        HelpIntentHandler,
+        getMenuIntentHandler,
+        getDrinkDescriptionIntentHandler,
+        getLocationIntentHandler,
+        addEventIntentHandler,
+        getUpcomingEventsIntentHandler,
+        getIngredientsInfoIntentHandler,
+        menuCheckerIntentHandler,
+        CancelAndStopIntentHandler,
+        SessionEndedRequestHandler,
+        IntentReflectorHandler, // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+    )
+    .addErrorHandlers(
+        ErrorHandler,
+    )
+    .lambda();
