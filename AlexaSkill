@@ -157,7 +157,7 @@ const getUpcomingEventsIntentHandler = {
     },
     handle(handlerInput) {
         
-        let EventString = '';
+        
         // Setting up Handler as an observer to AWS trigger/events? I think.
         
       // exports.handler = function (event,context, callback) {
@@ -167,40 +167,37 @@ const getUpcomingEventsIntentHandler = {
                 TableName: "SVEvents"
             };
             //console.log('Made it in the handler');
-               
-            let scanPromise = documentClient.scan(params).promise();
-            scanPromise.then(
-                function(data) {
-                    /* process the data */
-                    //console.log('Made it into the promise data block');
-                    for (var i = 0; i < data.Count; i++)
-                    {
-                        EventString += "We will be at " + data.Items[i].EventName + " which will be held at " + data.Items[i].Location + " at " + data.Items[i].Time + " ";
-                    }
-                    //console.log('Event string in the promise data block: ' + EventString);
-                    console.log('Succesfull: ' + EventString);
-                    return handlerInput.responseBuilder
-                    .speak('return inside scan data')
-                    .reprompt('Do you have any more questions for Seventh Venture?')
-                    .getResponse();
-                },
+            let EventString = '';
+            
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.scan(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }
+                                    for (var i = 0; i < data.Count; i++){
+                                        EventString += 'We will be at ' + data.Items[i].EventName + ' which will be held at ' + data.Items[i].Location
+                                        + ' at ' + data.Items[i].Time + ' '; 
+                                    }
+                                    console.log("inside scan promise: " + EventString);
+                                    
+                                    resolve(EventString);
+                        });
+                        
+            });
+                    //console.log( 'Return value: ' + EventString);
+                   return scanPromise.then(() => {
+                        console.log(".Then Return: " + EventString);
+                                    return handlerInput.responseBuilder
+                                    .speak(EventString)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak('catch return')
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    }); 
 
-            ).catch(function() {
-                    /* handle the error */
-                    //console.log('An error occurred in the promise');
-                    // DO THE RETURN TO THE ALEXA (IN THE CASE OF AN ERROR) IN HERE!!!!!
-                    console.log('Error: ' + EventString);
-                    return handlerInput.responseBuilder
-                    .speak(EventString)
-                    .reprompt('Do you have any more questions for Seventh Venture?')
-                    .getResponse();
-                });
-       
-            /*let speakOutput = EventString;
-            return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();*/
     }
 
     };
