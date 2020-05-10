@@ -1,0 +1,12 @@
+{
+  "request": {
+    "type": "IntentRequest",
+    "requestId": "amzn1.echo-api.request.1de83610-01f3-457c-b81a-5aa21eaa8d98",
+    "timestamp": "2020-04-30T01:27:14Z",
+    "locale": "en-US",
+    "intent": {
+      "name": "getUpcomingEventsIntent",
+      "confirmationStatus": "NONE"
+    }
+  }
+}
