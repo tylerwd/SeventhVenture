@@ -1,0 +1,74 @@
+{
+  	"request": {
+		"type": "IntentRequest",
+		"requestId": "amzn1.echo-api.request.33ecbe30-e9a2-43e2-a826-ff2d69b6a62f",
+		"timestamp": "2020-05-10T20:01:56Z",
+		"locale": "en-US",
+		"intent": {
+			"name": "getIngredientsInfoIntent",
+			"confirmationStatus": "NONE",
+			"slots": {
+				"menuItem": {
+					"name": "menuItem",
+					"value": "coffee",
+					"resolutions": {
+						"resolutionsPerAuthority": [
+							{
+								"authority": "amzn1.er-authority.echo-sdk.amzn1.ask.skill.380cd283-55b9-46a6-a359-69644668dc3c.menuItem",
+								"status": {
+									"code": "ER_SUCCESS_MATCH"
+								},
+								"values": [
+									{
+										"value": {
+											"name": "coffee",
+											"id": "24eb05d18318ac2db8b2b959315d10f2"
+										}
+									},
+									{
+										"value": {
+											"name": "dark roast coffee",
+											"id": "0ec71daf1c3c76e9190c3bd54eb977bf"
+										}
+									},
+									{
+										"value": {
+											"name": "light roast coffee",
+											"id": "5bea3c7eba0fc37a5892e56b040032fe"
+										}
+									}
+								]
+							}
+						]
+					},
+					"confirmationStatus": "NONE",
+					"source": "USER"
+				},
+				"ingredient": {
+					"name": "ingredient",
+					"value": "caffiene",
+					"resolutions": {
+						"resolutionsPerAuthority": [
+							{
+								"authority": "amzn1.er-authority.echo-sdk.amzn1.ask.skill.380cd283-55b9-46a6-a359-69644668dc3c.ingredient",
+								"status": {
+									"code": "ER_SUCCESS_MATCH"
+								},
+								"values": [
+									{
+										"value": {
+											"name": "caffiene",
+											"id": "dba21ab730e567135bb486a2dccbbb86"
+										}
+									}
+								]
+							}
+						]
+					},
+					"confirmationStatus": "NONE",
+					"source": "USER"
+				}
+			}
+		}
+	}
+}
