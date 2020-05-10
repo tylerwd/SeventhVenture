@@ -352,7 +352,7 @@ const getUpcomingEventsIntentHandler = {
     };
     
 //////////////////////////////////////////////////////////////////////OWNER INTENT HANDLERS////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+//TODO get Event type and Event Time slots to work correctly
 const addEventIntentHandler= {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
