@@ -6,23 +6,6 @@ AWS.config.update({region: "us-east-1"});
 //Load Alexa SDK for Node.js
 const Alexa = require('ask-sdk-core');
 
-
-
-// Call DynamoDB to read the item from the table
-
-//Creation of Menu Items: Each will have an ingredients list and a quick description of how the drink is made
-var menuItem = {name:'', description:'', ingredients: ''};
-var coffee = {name:'coffee', description:'its just beans in water', ingredients: 'caffiene'};
-var lightRoastCoffee = {name:'', description:'', ingredients: ''};
-//tableHolder = 'testing';
-//EventReturn;
-//Menu items relate the input from customer (in quotes) to an object in the list
-var MENU = {
-    'coffee' : coffee
-}
-
-var menuList = ["coffee", "light roast coffee", "dark roast coffee", "cappuccino"]
-
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
@@ -37,65 +20,158 @@ const LaunchRequestHandler = {
 };
 
 //returns the menu as a list of items to the customer
+//works with dynamodb
 const getMenuIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getMenuIntent';
     },
     handle(handlerInput) {
-        //var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
-        var i;
-        var speakOutput;
-        //cycles through the menu list to create a string for speach output. Adds a space between item menus
-        for (i = 0; i < menuList.length; i++){
-            if (i === 0) {
-                speakOutput = menuList[i];
-                speakOutput += ', ';
-            } else{
-                    speakOutput += menuList[i];
-                    speakOutput += ', ';                
-            }
-        }
         
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();
+        
+        // Setting up Handler as an observer to AWS trigger/events? I think.
+        
+      // exports.handler = function (event,context, callback) {
+            //const ddb = new AWS.DynamoDB({apiVersion: "2012-10-08"}); // NOT USED
+            const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                TableName: "SVMenuItems"
+            };
+            
+            let MenuItemString = 'We have ';
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.scan(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                        
+                                    for (var i = 0; i < (data.Count -1); i++){
+                                        MenuItemString += data.Items[i].x + ',';
+                                    }
+                                    
+                                        MenuItemString += ' and ' + data.Items[data.Count-1].x; 
+                                    console.log("inside scan promise: " + MenuItemString);
+                                    
+                                    resolve(MenuItemString);
+                        });
+                        
+            });
+                    //console.log( 'Return value: ' + EventString);
+                   return scanPromise.then(() => {
+                        console.log(".Then Return: " + MenuItemString);
+                                    return handlerInput.responseBuilder
+                                    .speak(MenuItemString)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak('catch return')
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });        
     }
 };
 
+//works with dynamodb
+//TODO add checks for incoming intent slots so there is no failure
 const menuCheckerIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getDrinkDescriptionIntent';
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'menuCheckerIntent';
     },
     handle(handlerInput) {
         var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
-        var speakOutput;        
-        if (menuList.includes(menuItem)) {
-            speakOutput = 'Yes, ' + menuItem + ' is on the menu';    
-        } else{ 
-            speakOutput = 'I am sorry, ' + menuItem + ' is not on the menu';
-        }
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();
+        
+        // Setting up Handler as an observer to AWS trigger/events? I think.
+        
+      // exports.handler = function (event,context, callback) {
+            //const ddb = new AWS.DynamoDB({apiVersion: "2012-10-08"}); // NOT USED
+            const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                TableName: "SVMenuItems"
+            };
+
+            let MenuItemString;
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.scan(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                        
+                                    for (var i = 0; i < (data.Count); i++){
+                                        MenuItemString += data.Items[i].x + ' ';
+                                    }
+                                    console.log(data);
+                                    resolve(MenuItemString);
+                        });
+                        
+            });
+                    //console.log( 'Return value: ' + EventString);
+                   let speakOutput = '';
+                   return scanPromise.then(() => {
+                       console.log('menu item in promise: ' + menuItem);
+                       if (MenuItemString.includes(menuItem)){
+                           speakOutput = 'Yes we have ' + menuItem;
+                       } else {
+                           speakOutput = 'Sorry we do not serve ' + menuItem;
+                       }
+                                    console.log('speak output: ' + speakOutput);
+                                    return handlerInput.responseBuilder
+                                    .speak(speakOutput)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak('catch return')
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });        
     }
 };
 
+//gets the drink description from dynamodb menu
+//TODO what happens when you don't have the drink description? 
 const getDrinkDescriptionIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getDrinkDescriptionIntent';
     },
     handle(handlerInput) {
-        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
-        const speakOutput = MENU[menuItem].description;
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();
+         var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+         const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                        TableName: "SVMenuItems",
+                        Key : {
+                            x : menuItem
+                        }
+
+};
+            let descriptionReturn = '';
+            let ingredientReturn = '';
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.get(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                                    console.log(data);
+                                    descriptionReturn = data.Item.description;
+                                    ingredientReturn = data.Item.ingredients;
+                                    resolve(descriptionReturn,ingredientReturn);
+                        });
+                        
+            });
+            
+                   return scanPromise.then(() => {
+                                    return handlerInput.responseBuilder
+                                    .speak(descriptionReturn + " " + menuItem + " contains " + ingredientReturn)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak('catch return')
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });        
     }
 };
 
@@ -106,7 +182,7 @@ const addEventIntentHandler= {
     },
     handle(handlerInput) {
         var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
-        const speakOutput = MENU[menuItem].description;
+        const speakOutput = 'nothing now';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt('Do you have any more questions for Seventh Venture?')
@@ -114,7 +190,8 @@ const addEventIntentHandler= {
     }
 };
 
-
+//checks if a certain ingredient is in an item
+//TODO more testing on cases that won't work
 const getIngredientsInfoIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -123,18 +200,105 @@ const getIngredientsInfoIntentHandler = {
     handle(handlerInput) {
         var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
         var ingredient = handlerInput.requestEnvelope.request.intent.slots.ingredient.value;
-        var speakOutput;
-        if (MENU[menuItem].ingredients.includes(ingredient)){
-            speakOutput = 'Yes, ' + menuItem + ' contains ' + ingredient;
-        } else {
-            speakOutput = 'No, ' + menuItem + ' does not contain ' + ingredient;
-        }
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();
+         const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                        TableName: "SVMenuItems",
+                        Key : {
+                            x : menuItem
+                        }
+
+};
+            let ingredientReturn = '';
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.get(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                                    
+                                    ingredientReturn = data.Item.ingredients;
+                                    resolve(ingredientReturn);
+                        });
+                        
+            });
+            
+                   return scanPromise.then(() => {
+                                    let speakOutput = '';
+                                    console.log("ingredientReturn: " + ingredientReturn );
+                                    console.log("ingredient: " + ingredient );
+                                    console.log("menu item: " + menuItem );
+                                    if ((ingredientReturn.includes(ingredient)) || (ingredientReturn.equals(ingredient))){
+                                        speakOutput = "Yes, " + menuItem + " contains " + ingredient;
+                                    } else {
+                                         speakOutput = "No, " + menuItem + " does not contain " + ingredient;
+                                    }
+                                    console.log("speakOutput: "+ speakOutput);
+                                    return handlerInput.responseBuilder
+                                    .speak(speakOutput)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak("I'm sorry there was an issue with your request. in this app")
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });
     }
 };
+
+//returns the full ingredient list of a menu item this was moved to be handled in get drink description since the ask is so similar doesn't work currently
+//TODO more testing on cases that won't work
+/*const getIngredientsIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'getIngredientsIntent';
+    },
+    handle(handlerInput) {
+        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
+        var ingredient = handlerInput.requestEnvelope.request.intent.slots.ingredient.value;
+         const documentClient = new AWS.DynamoDB.DocumentClient({region: "us-east-1"});
+            const params = {
+                        TableName: "SVMenuItems",
+                        Key : {
+                            x : menuItem
+                        }
+
+};
+            let ingredientReturn = '';
+            let scanPromise = new Promise((resolve, reject) => {
+                     documentClient.get(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                                    
+                                    ingredientReturn = data.Item.ingredients;
+                                    resolve(ingredientReturn);
+                        });
+                        
+            });
+            
+                   return scanPromise.then(() => {
+                                    let speakOutput = '';
+                                    console.log("ingredientReturn: " + ingredientReturn );
+                                    console.log("ingredient: " + ingredient );
+                                    console.log("menu item: " + menuItem );
+                                    if ((ingredientReturn.includes(ingredient)) || (ingredientReturn.equals(ingredient))){
+                                        speakOutput = "Yes, " + menuItem + " contains " + ingredient;
+                                    } else {
+                                         speakOutput = "No, " + menuItem + " does not contain " + ingredient;
+                                    }
+                                    console.log("speakOutput: "+ speakOutput);
+                                    return handlerInput.responseBuilder
+                                    .speak(speakOutput)
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak("I'm sorry there was an issue with your request. in this app")
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });
+    }
+};*/
 
 const getLocationIntentHandler = {
     canHandle(handlerInput) {
@@ -149,7 +313,7 @@ const getLocationIntentHandler = {
             .getResponse();
     }
 };
-
+//returns the upcoming events from the dynamodb table
 const getUpcomingEventsIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -289,6 +453,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         addEventIntentHandler,
         getUpcomingEventsIntentHandler,
         getIngredientsInfoIntentHandler,
+        //getIngredientsIntentHandler,
         menuCheckerIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
