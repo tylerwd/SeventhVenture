@@ -18,7 +18,7 @@ const LaunchRequestHandler = {
             .getResponse();
     }
 };
-
+///////////////////////////////////////////////////////////////////////////////////////////CUSTOMER INTENT HANDLERS////////////////////////////////////////////////////////////////////////////////////////////////////////
 //returns the menu as a list of items to the customer
 //works with dynamodb
 const getMenuIntentHandler = {
@@ -175,21 +175,6 @@ const getDrinkDescriptionIntentHandler = {
     }
 };
 
-const addEventIntentHandler= {
-    canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'addEventIntentHandler';
-    },
-    handle(handlerInput) {
-        var menuItem = handlerInput.requestEnvelope.request.intent.slots.menuItem.value;
-        const speakOutput = 'nothing now';
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .reprompt('Do you have any more questions for Seventh Venture?')
-            .getResponse();
-    }
-};
-
 //checks if a certain ingredient is in an item
 //TODO more testing on cases that won't work
 const getIngredientsInfoIntentHandler = {
@@ -339,7 +324,7 @@ const getUpcomingEventsIntentHandler = {
                             console.log(err);
                         }
                                     for (var i = 0; i < data.Count; i++){
-                                        EventString += 'We will be at ' + data.Items[i].EventName + ' which will be held at ' + data.Items[i].Location
+                                        EventString += 'We will be at ' + data.Items[i].x + ' which will be held at ' + data.Items[i].Location
                                         + ' at ' + data.Items[i].Time + ' '; 
                                     }
                                     console.log("inside scan promise: " + EventString);
@@ -365,14 +350,67 @@ const getUpcomingEventsIntentHandler = {
     }
 
     };
+    
+//////////////////////////////////////////////////////////////////////OWNER INTENT HANDLERS////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const addEventIntentHandler= {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'addEventIntent';
+    },
+    handle(handlerInput) {
+        var eventType = "coffee night"; //handlerInput.requestEnvelope.request.intent.slots.eventType.value.name;
+        var eventLocation = handlerInput.requestEnvelope.request.intent.slots.eventLocation.value;
+        var eventTime = "8 pm";//handlerInput.requestEnvelope.request.intent.slots.eventTime.value;
+        console.log ("input type: " + eventType);
+        console.log("input location: " +  eventLocation);
+        console.log("input time: " +  eventTime);
+        
+         const ddb = new AWS.DynamoDB({region: "us-east-1"});
+            const params = {
+                        TableName: "SVEvents",
+                        Item : {
+                            'x': {S: eventType},
+                            'Location': {S: eventLocation},
+                            'Time': {S: eventTime}
+                        }
+
+};
+            let putItemPromise = new Promise((resolve, reject) => {
+                     ddb.putItem(params, (err,data) => {
+                        if(err){
+                            console.log(err);
+                        }           
+                                    console.log('Added Data');
+                                    resolve();
+                        });
+                        
+            });
+            
+                   return putItemPromise.then(() => {
+                                    return handlerInput.responseBuilder
+                                    .speak(eventType + " at " + eventLocation + " at " + eventType + " added ")
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();
+                    }).catch(() => {
+                        return handlerInput.responseBuilder
+                                    .speak('catch return')
+                                    .reprompt('Do you have any more questions for Seventh Venture?')
+                                    .getResponse();                        
+                    });
+    }
+};
+
+
+
+////////////////////////////////////////////////////////////////////////UTILITY INTENT HANDLERS////////////////////////////////////////////////////////////////////////////////////////////////////
 const HelpIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
-        const speakOutput = 'You can say hello to me! How can I help?';
+        const speakOutput = 'You can check our menu, ask for a description of our drinks, ask for our current location, and more! If you have any questions, visit us on instagram at seventh venture alexa for a comprehensive guide on our alexa app!';
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -413,11 +451,11 @@ const IntentReflectorHandler = {
     },
     handle(handlerInput) {
         const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
-        const speakOutput = `You just triggered ${intentName}`;
+        const speakOutput = `You just triggered ${intentName} and there was an error triggering the response correctly. If you believe your request should have worked, please contact us at seventh venture coffee at gmail dot com so we can patch your issue`;
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            //.reprompt('add a reprompt if you want to keep the session open for the user to respond')
+            .reprompt('The intent you were attempting to trigger did not trigger properly. Please try again or try another request')
             .getResponse();
     }
 };
@@ -431,11 +469,11 @@ const ErrorHandler = {
     },
     handle(handlerInput, error) {
         console.log(`~~~~ Error handled: ${error.stack}`);
-        const speakOutput = `Sorry, I had trouble doing what you asked. Please try again.`;
+        const speakOutput = `Sorry, there was an issue proccessing your request. If you can, please provide us with what you asked at seventh venture coffee at gmail dot com so we can patch the issue.`;
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt(speakOutput)
+            .reprompt('Please try your request again, or try another request.')
             .getResponse();
     }
 };
