@@ -21,12 +21,63 @@
 
             <label for="eventTime">Event Time</label>
             <textarea id="eventTime"></textarea>
-            <button id='submitButton'>Submit</button>
-            <h1> Menu Items </h1>
+            <button id='submitEventButton'>Submit</button>
+
+        <h1> Update an Event</h1>
+            <label for="updateEventName">Event Name</label>
+            <textarea id="updateEventName"></textarea>
+
+
+            <label for="updateEventLocation">Event Location</label>
+            <textarea id="updateEventLocation"></textarea>
+
+
+            <label for="updateEventTime">Event Time</label>
+            <textarea id="updateEventTime"></textarea>
+            <button id='submitUpdateEventButton'>Submit</button>
+	<h1> Delete Events </h1>
+
+            <label for="deleteEventName">Event Name</label>
+            <textarea id="deleteEventName"></textarea>
+            <button id='deleteEventButton'>Delete</button></form>
+            
+	<h1> Menu Items </h1>
             <div id="menuItems">
 
             </div>
-        </form>
+	<h1> Add Menu Items </h1>
+            <label for="menuItemName">Menu Item Name</label>
+            <textarea id="menuItemName"></textarea>
+
+
+            <label for="menuItemIngredients">Menu Item Ingredients</label>
+            <textarea id="menuItemIngredients"></textarea>
+
+
+            <label for="menuItemDescription">Menu Item Description</label>
+            <textarea id="menuItemDescription"></textarea>
+            <button id='submitMenuItemButton'>Submit</button>
+            
+	<h1> Update Menu Items </h1>
+
+            <label for="updateMenuItemName">Menu Item Name</label>
+            <textarea id="updateMenuItemName"></textarea>
+
+
+            <label for="updateMenuItemIngredients">Menu Item Ingredients</label>
+            <textarea id="updateMenuItemIngredients"></textarea>
+
+
+            <label for="updateMenuItemDescription">Menu Item Description</label>
+            <textarea id="updateMenuItemDescription"></textarea>
+            <button id='submitUpdateMenuItemButton'>Submit</button>
+
+	<h1> Delete Menu Items </h1>
+
+            <label for="deleteMenuItemName">Menu Item Name</label>
+            <textarea id="deleteMenuItemName"></textarea>
+            <button id='deleteMenuItemButton'>Delete</button></form>
+
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script type="text/javascript">
             var API_URL_GET_EVENTS = 'https://trxqlj81aa.execute-api.us-east-1.amazonaws.com/test';
@@ -39,7 +90,7 @@
 
                         $('#entries').html('');
                         data.Items.forEach(function (eventItem) {
-                            $('#entries').append('<p>' + eventItem.x + ' at ' + eventItem.Location + '. The event goes from ' + eventItem.Time + '</p>')
+                            $('#entries').append('<p>' + "Event Name: " + eventItem.x + '. Event Location: ' + eventItem.Location + '. Event Time: ' + eventItem.Time + '</p>')
                         })
                     }
                 });
@@ -57,7 +108,7 @@
                     }
                 });
     });
-            $('#sumbitButton').on('click', function(){
+            $('#sumbitEventButton').on('click', function(){
                 $.ajax({
                     type: 'POST',
                     url: 'https://szu395gvqc.execute-api.us-east-1.amazonaws.com/events/',
