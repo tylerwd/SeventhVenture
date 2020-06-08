@@ -1,0 +1,77 @@
+
+<html>
+    <head>
+    </head>
+
+    <body>
+
+        <h1> Events List </h1>
+        <div id="entries">
+
+        </div>
+        <h1> Add an Event</h1>
+        <form>
+            <label for="eventName">Event Name</label>
+            <textarea id="eventName"></textarea>
+
+
+            <label for="eventLocation">Event Location</label>
+            <textarea id="eventLocation"></textarea>
+
+
+            <label for="eventTime">Event Time</label>
+            <textarea id="eventTime"></textarea>
+            <button id='submitButton'>Submit</button>
+            <h1> Menu Items </h1>
+            <div id="menuItems">
+
+            </div>
+        </form>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script type="text/javascript">
+            var API_URL_GET_EVENTS = 'https://trxqlj81aa.execute-api.us-east-1.amazonaws.com/test';
+            var API_URL_MENUITEMS = 'https://82038jxzu3.execute-api.us-east-1.amazonaws.com/menuItems/';
+        $(document).ready(function(){
+                $.ajax({
+                    type: 'GET',
+                    url: API_URL_GET_EVENTS,
+                    success: function (data) {
+
+                        $('#entries').html('');
+                        data.Items.forEach(function (eventItem) {
+                            $('#entries').append('<p>' + eventItem.x + ' at ' + eventItem.Location + '. The event goes from ' + eventItem.Time + '</p>')
+                        })
+                    }
+                });
+
+
+            $.ajax({
+                    type: 'GET',
+                    url: API_URL_MENUITEMS,
+                    success: function (data) {
+
+                        $('#menuItems').html('');
+                        data.Items.forEach(function (menuItem) {
+                            $('#menuItems').append('<p>' + " Item Name:  " + menuItem.x + '.  Ingredients list: ' + menuItem.ingredients + '.  Description shown: ' + menuItem.description + '</p>')
+                        })
+                    }
+                });
+    });
+            $('#sumbitButton').on('click', function(){
+                $.ajax({
+                    type: 'POST',
+                    url: 'https://szu395gvqc.execute-api.us-east-1.amazonaws.com/events/',
+                    data: { "x": "new Name", "Location": "new location", "Time": "new time" },
+                    contentType: "application/json",
+
+                    success: function (data) {
+                        location.reload();
+                    }
+                });
+
+                return false;
+        });        
+
+        </script>
+    </body>
+</html>
